@@ -30,6 +30,11 @@ Próximo paso: F0/F1 — esqueleto con `pyproject.toml` (uv) + `src/cartas.py` +
   CSV hasta que el uso real pida más).
 - **Orden de los drills:** D1 preflop por posición (MVP) → D2 pot odds/equity →
   D3 lectura de manos → D4 postflop guiado (requiere contenido curado, va al final).
+- **Sin MLX ni aceleración GPU/ML** (evaluado 2026-07-05): el cómputo del proyecto
+  no tiene forma de problema GPU — D1/D3 son lookups y comparaciones; el Monte Carlo
+  de D2 es de una situación a la vez y el evaluador tiene demasiado branching para
+  vectorizar bien. Si D2 queda lento, la ruta es `treys` (CPU), no MLX. Un LLM local
+  para el feedback chocaría con la trazabilidad de los charts. Detalle en el diseño §3.
 
 ## Decisiones abiertas (resolver antes de F2)
 

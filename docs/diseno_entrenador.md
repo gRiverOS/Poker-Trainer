@@ -80,6 +80,22 @@ Principios (heredados del Shoe-Tracker):
 - Propuesta: **B para el MVP** (D1 y D3 no necesitan velocidad), migrar a A si el
   Monte Carlo de D2 queda lento.
 
+### Decisión: sin MLX ni aceleración GPU/ML (2026-07-05)
+
+Se evaluó usar Apple MLX y se descartó:
+
+- **D1 y D3** son lookups de tablas y lógica de comparación — cero cómputo pesado.
+- **D2 (Monte Carlo)** calcula la equity de *una* situación mientras el usuario
+  entrena; decenas de miles de simulaciones en Python puro toman segundos y sobran.
+  Además el evaluador de manos es lógica con branching (escalera, color, full...),
+  justo lo que peor se vectoriza en GPU. **Si D2 queda lento, la escalación es
+  `treys` (lookup tables en CPU), no vectorización GPU** — ya anotado arriba.
+- Usos donde MLX sí calzaría contradicen el proyecto: entrenar un modelo que juegue
+  es construir un solver (fuera de alcance explícito), y un LLM local generando el
+  feedback rompe el principio de que "correcto" sea trazable a charts citables.
+
+Revisitar solo si el alcance cambia (p. ej. se decide construir un solver — hoy no).
+
 ## 4. Loop de entrenamiento
 
 1. `uv run trainer.py --drill preflop` → sesión de N situaciones.
