@@ -13,15 +13,17 @@ implementar cualquier cosa. Define módulos, arquitectura y fases.
 
 ## Estado actual
 
-**Fase F1 completada** (2026-07-05): `cartas.py` (Carta, mazo, parsing "Ah Kd")
-y `evaluador.py` (ranking 5/7 cartas, puntaje como tupla comparable) con tests
-de regresión. Validado además contra `treys` en 5.000 repartos aleatorios sin
-discrepancias (validación puntual, treys no es dependencia).
+**Fase F2 completada** (2026-07-05): drill D1 preflop jugable
+(`uv run trainer.py --drill preflop`), con charts RFI citados en `data/`,
+`rangos.py` (notación 169 + expansión de tokens), feedback por mano y resumen
+por posición, e historial persistido en `output/historial.csv`.
 
-Próximo paso: F2 — drill D1 preflop: elegir y citar la fuente de los charts en
-`data/rangos_preflop/`, implementar `rangos.py`, `drills/preflop.py` y
-`progreso.py`. Antes de partir, cerrar las decisiones abiertas (cash/torneo,
-6-max/full ring — propuestas: cash 100bb, 6-max).
+**Alcance de D1 en F2: solo RFI** (nadie abrió: ¿open o fold?). Enfrentar un
+open (call/3-bet) requiere charts por par de posiciones — extensión pendiente
+de D1, priorizable después de F3/F4.
+
+Próximo paso: F3 — D2 pot odds/equity (`equity.py`, Monte Carlo + enumeración,
+validar contra calculadoras de referencia).
 
 ## Decisiones tomadas
 
@@ -40,14 +42,14 @@ Próximo paso: F2 — drill D1 preflop: elegir y citar la fuente de los charts e
   vectorizar bien. Si D2 queda lento, la ruta es `treys` (CPU), no MLX. Un LLM local
   para el feedback chocaría con la trazabilidad de los charts. Detalle en el diseño §3.
 
-## Decisiones abiertas (resolver antes de F2)
+## Decisiones cerradas en F1/F2 (2026-07-05)
 
-- **¿Cash o torneo?** Propuesta en el diseño: cash 100bb (charts públicos más estándar).
-- **¿6-max o full ring?** Propuesta: 6-max.
-- **¿Evaluador propio o librería (`treys`)?** Propuesta: propio para el MVP (escribirlo
-  es parte del aprendizaje); migrar a librería solo si el Monte Carlo de D2 queda lento.
-- **Fuente de los charts preflop:** elegir un set público de referencia y citarlo en
-  `data/` — el criterio de "correcto" debe ser trazable, no opinión del código.
+- **Cash 100bb, 6-max** — confirmado por Gustavo (era la propuesta del diseño).
+- **Evaluador propio** — implementado en F1 y validado contra `treys` (5.000
+  repartos, 0 discrepancias). Migrar a `treys` solo si el Monte Carlo de F3 lo pide.
+- **Fuente de los charts preflop:** Preflop Wizard
+  (https://www.preflopwizard.app/blog/preflop-charts), citada en
+  `data/rangos_preflop/rfi_cash_6max_100bb.json` con fecha de consulta.
 
 ## Fases (resumen — detalle en el diseño)
 
@@ -55,7 +57,7 @@ Próximo paso: F2 — drill D1 preflop: elegir y citar la fuente de los charts e
 |------|-----------|
 | F0 | Diseño + esqueleto del repo ✅ |
 | F1 | `cartas.py` + `evaluador.py` + tests de regresión ✅ |
-| F2 | Drill D1 preflop con charts en `data/` + persistencia de progreso |
+| F2 | Drill D1 preflop (RFI) con charts en `data/` + persistencia de progreso ✅ |
 | F3 | D2 pot odds/equity (Monte Carlo, validar contra calculadoras de referencia) |
 | F4 | D3 lectura de manos + repetición ponderada por error |
 | F5 | (Opcional) D4 postflop o UI web |

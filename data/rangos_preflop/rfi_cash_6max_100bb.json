@@ -1,0 +1,29 @@
+{
+  "formato": "cash 6-max, 100bb efectivos, sin ante, estrategia raise-o-fold (sin limp)",
+  "fuente": "Preflop Wizard — https://www.preflopwizard.app/blog/preflop-charts",
+  "consultado": "2026-07-05",
+  "nota": "Charts GTO simplificados a acción pura, tal como los publica la fuente. Los porcentajes son los declarados por la fuente. BB no tiene decisión RFI (si nadie abre, pasa).",
+  "acciones": ["fold", "open"],
+  "rangos_open": {
+    "UTG": {
+      "pct_fuente": 15,
+      "rango": "22+, ATs+, AJo+, KQs, KJs, QJs, JTs, T9s"
+    },
+    "MP": {
+      "pct_fuente": 19,
+      "rango": "22+, A9s+, ATo+, KTs+, KQo, QTs+, JTs, T9s, 98s"
+    },
+    "CO": {
+      "pct_fuente": 27,
+      "rango": "22+, A2s+, A8o+, K9s+, KTo+, Q9s+, QTo+, J9s+, JTo, T8s+, 97s+, 87s, 76s, 65s"
+    },
+    "BTN": {
+      "pct_fuente": 43,
+      "rango": "22+, A2s+, A2o+, K2s+, K7o+, Q4s+, Q9o+, J7s+, J9o+, T7s+, T9o, 96s+, 86s+, 75s+, 65s, 54s"
+    },
+    "SB": {
+      "pct_fuente": 36,
+      "rango": "22+, A2s+, A4o+, K4s+, K9o+, Q7s+, QTo+, J8s+, JTo, T8s+, 97s+, 87s, 76s, 65s, 54s"
+    }
+  }
+}
