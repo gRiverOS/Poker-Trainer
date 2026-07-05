@@ -13,11 +13,15 @@ implementar cualquier cosa. Define módulos, arquitectura y fases.
 
 ## Estado actual
 
-**Fase F0 completada** (2026-07-05): esqueleto del repo con `pyproject.toml` (uv),
-módulos placeholder en `src/`, `trainer.py` stub y tests verdes (`uv run pytest`).
+**Fase F1 completada** (2026-07-05): `cartas.py` (Carta, mazo, parsing "Ah Kd")
+y `evaluador.py` (ranking 5/7 cartas, puntaje como tupla comparable) con tests
+de regresión. Validado además contra `treys` en 5.000 repartos aleatorios sin
+discrepancias (validación puntual, treys no es dependencia).
 
-Próximo paso: F1 — implementar `src/cartas.py` + `src/evaluador.py` con tests
-de regresión.
+Próximo paso: F2 — drill D1 preflop: elegir y citar la fuente de los charts en
+`data/rangos_preflop/`, implementar `rangos.py`, `drills/preflop.py` y
+`progreso.py`. Antes de partir, cerrar las decisiones abiertas (cash/torneo,
+6-max/full ring — propuestas: cash 100bb, 6-max).
 
 ## Decisiones tomadas
 
@@ -50,7 +54,7 @@ de regresión.
 | Fase | Entregable |
 |------|-----------|
 | F0 | Diseño + esqueleto del repo ✅ |
-| F1 | `cartas.py` + `evaluador.py` + tests de regresión |
+| F1 | `cartas.py` + `evaluador.py` + tests de regresión ✅ |
 | F2 | Drill D1 preflop con charts en `data/` + persistencia de progreso |
 | F3 | D2 pot odds/equity (Monte Carlo, validar contra calculadoras de referencia) |
 | F4 | D3 lectura de manos + repetición ponderada por error |
