@@ -3,4 +3,10 @@
 Entrenador personal de Texas Hold'em: drills cortos con feedback inmediato
 (preflop por posición, pot odds/equity, lectura de manos).
 
-Estado: **fase de diseño** — ver [docs/diseno_entrenador.md](docs/diseno_entrenador.md).
+Estado: **F0 — esqueleto listo, sin drills todavía** — ver
+[docs/diseno_entrenador.md](docs/diseno_entrenador.md).
+
+```sh
+uv run pytest              # tests
+uv run trainer.py --drill preflop
+```

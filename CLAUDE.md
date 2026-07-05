@@ -13,11 +13,11 @@ implementar cualquier cosa. Define módulos, arquitectura y fases.
 
 ## Estado actual
 
-**Fase F0 — diseño.** No hay código todavía. Lo único versionado es el diseño,
-este archivo y el README.
+**Fase F0 completada** (2026-07-05): esqueleto del repo con `pyproject.toml` (uv),
+módulos placeholder en `src/`, `trainer.py` stub y tests verdes (`uv run pytest`).
 
-Próximo paso: F0/F1 — esqueleto con `pyproject.toml` (uv) + `src/cartas.py` +
-`src/evaluador.py` con tests de regresión.
+Próximo paso: F1 — implementar `src/cartas.py` + `src/evaluador.py` con tests
+de regresión.
 
 ## Decisiones tomadas
 
@@ -49,7 +49,7 @@ Próximo paso: F0/F1 — esqueleto con `pyproject.toml` (uv) + `src/cartas.py` +
 
 | Fase | Entregable |
 |------|-----------|
-| F0 | Diseño + esqueleto del repo (✅ diseño; esqueleto pendiente) |
+| F0 | Diseño + esqueleto del repo ✅ |
 | F1 | `cartas.py` + `evaluador.py` + tests de regresión |
 | F2 | Drill D1 preflop con charts en `data/` + persistencia de progreso |
 | F3 | D2 pot odds/equity (Monte Carlo, validar contra calculadoras de referencia) |
