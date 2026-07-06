@@ -38,3 +38,10 @@ def test_mazo_completo():
 
 def test_str_roundtrip():
     assert all(carta(str(c)) == c for c in mazo())
+
+
+def test_bonita_usa_simbolos():
+    from src.cartas import mostrar
+
+    assert carta("Kd").bonita == "K♦"
+    assert mostrar(cartas("6c 3d Kd 8h 9d")) == "6♣ 3♦ K♦ 8♥ 9♦"

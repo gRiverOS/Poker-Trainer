@@ -4,6 +4,7 @@ import argparse
 import random
 
 from src import progreso
+from src.cartas import mostrar
 from src.drills import lectura, pot_odds, preflop
 from src.equity import equity_monte_carlo
 from src.rangos import cargar_rfi
@@ -41,8 +42,7 @@ def sesion_preflop(n: int, rng: random.Random) -> None:
 
     for i in range(1, n + 1):
         situacion = preflop.generar_situacion(rng, pesos)
-        cartas_texto = " ".join(str(c) for c in situacion.mano)
-        respuesta = _leer(f"[{i}/{n}] {situacion.posicion} — {cartas_texto} ({situacion.notacion}): ")
+        respuesta = _leer(f"[{i}/{n}] {situacion.posicion} — {mostrar(situacion.mano)} ({situacion.notacion}): ")
         if respuesta is None:
             break
         if respuesta not in ("o", "f"):
@@ -66,9 +66,7 @@ def sesion_pot_odds(n: int, rng: random.Random) -> None:
 
     for i in range(1, n + 1):
         s = pot_odds.generar_situacion(rng, pesos)
-        mano = " ".join(str(c) for c in s.mano)
-        board = " ".join(str(c) for c in s.board)
-        print(f"[{i}/{n}] {s.calle}: tu mano {mano} — board {board}")
+        print(f"[{i}/{n}] {s.calle}: tu mano {mostrar(s.mano)} — board {mostrar(s.board)}")
         print(f"      pot {s.pot:g}bb, el rival apuesta {s.apuesta:g}bb. ¿Pagas?")
 
         estimacion_texto = _leer("      tu equity estimada (%): ")
@@ -108,10 +106,9 @@ def sesion_lectura(n: int, rng: random.Random) -> None:
 
     for i in range(1, n + 1):
         s = lectura.generar_situacion(rng, pesos)
-        board = " ".join(str(c) for c in s.board)
-        print(f"[{i}/{n}] Board: {board}")
+        print(f"[{i}/{n}] Board: {mostrar(s.board)}")
         for j, mano in enumerate(s.manos, start=1):
-            print(f"      Mano {j}: {' '.join(str(c) for c in mano)}")
+            print(f"      Mano {j}: {mostrar(mano)}")
 
         validas = tuple(str(j) for j in range(1, len(s.manos) + 1)) + ("e",)
         respuesta = _leer(f"      ¿quién gana? ({'/'.join(validas)}): ")

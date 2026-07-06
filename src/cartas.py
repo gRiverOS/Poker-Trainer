@@ -10,6 +10,7 @@ from dataclasses import dataclass
 VALOR_DE = {letra: valor for valor, letra in enumerate("23456789TJQKA", start=2)}
 LETRA_DE = {valor: letra for letra, valor in VALOR_DE.items()}
 PALOS = "shdc"
+SIMBOLO_DE = {"s": "♠", "h": "♥", "d": "♦", "c": "♣"}
 
 
 @dataclass(frozen=True, order=True)
@@ -19,6 +20,16 @@ class Carta:
 
     def __str__(self) -> str:
         return f"{LETRA_DE[self.valor]}{self.palo}"
+
+    @property
+    def bonita(self) -> str:
+        """Versión para pantalla con símbolo de palo: "K♦" en vez de "Kd"."""
+        return f"{LETRA_DE[self.valor]}{SIMBOLO_DE[self.palo]}"
+
+
+def mostrar(varias) -> str:
+    """Varias cartas para pantalla: "K♦ 8♥ 9♦"."""
+    return " ".join(c.bonita for c in varias)
 
 
 def carta(texto: str) -> Carta:

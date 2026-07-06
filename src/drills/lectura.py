@@ -10,7 +10,7 @@ import random
 from dataclasses import dataclass
 from functools import cached_property
 
-from src.cartas import Carta, mazo
+from src.cartas import Carta, mazo, mostrar
 from src.evaluador import NOMBRES, mejor_5
 from src.progreso import PESO_SIN_DATOS
 
@@ -118,7 +118,7 @@ def feedback(resultado: Resultado) -> str:
         titulo = f"{veredicto}: gana la mano {s.correcta} con {s.categoria_ganadora}."
     lineas = [titulo]
     for i, (puntos, cinco) in enumerate(s.evaluaciones):
-        mano = " ".join(str(c) for c in s.manos[i])
-        mejor = " ".join(str(c) for c in cinco)
-        lineas.append(f"  Mano {i + 1} ({mano}): {NOMBRES[puntos[0]]} — mejor 5: {mejor}")
+        lineas.append(
+            f"  Mano {i + 1} ({mostrar(s.manos[i])}): {NOMBRES[puntos[0]]} — mejor 5: {mostrar(cinco)}"
+        )
     return "\n".join(lineas)
