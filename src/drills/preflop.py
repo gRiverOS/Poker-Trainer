@@ -193,23 +193,22 @@ def tip_defensa(situacion: Situacion, defensa_bb: dict) -> str:
 def feedback(resultado: Resultado, rfi: dict, defensa_bb: dict | None = None) -> str:
     s = resultado.situacion
     veredicto = "✓ Correcto" if resultado.acierto else "✗ Incorrecto"
+    # jerarquía: veredicto → tip (si hubo error) → evidencia de los charts
     if s.es_defensa:
         entrada = defensa_bb[s.abridor]
         accion = {"3bet": "se 3betea", "call": "se paga", "fold": "se bota"}[resultado.correcta]
-        lineas = [
-            f"{veredicto}: {s.notacion} {accion} desde BB contra un open de {s.abridor}.",
-            f"  3-bet BB vs {s.abridor}: {entrada['3bet']['rango']}",
-            f"  Call  BB vs {s.abridor}: {entrada['call']['rango']}",
-        ]
+        lineas = [f"{veredicto}: {s.notacion} {accion} desde BB contra un open de {s.abridor}."]
         if not resultado.acierto:
-            lineas.append(f"  Tip: {tip_defensa(s, defensa_bb)}")
+            lineas.append(f"Tip: {tip_defensa(s, defensa_bb)}")
+        lineas += [
+            f"3-bet BB vs {s.abridor}: {entrada['3bet']['rango']}",
+            f"Call  BB vs {s.abridor}: {entrada['call']['rango']}",
+        ]
     else:
         entrada = rfi[s.posicion]
         dentro = "está en" if resultado.correcta == "open" else "no está en"
-        lineas = [
-            f"{veredicto}: {s.notacion} {dentro} el rango de open de {s.posicion}.",
-            f"  Rango {s.posicion}: {entrada['rango']}",
-        ]
+        lineas = [f"{veredicto}: {s.notacion} {dentro} el rango de open de {s.posicion}."]
         if not resultado.acierto:
-            lineas.append(f"  Tip: {tip_rfi(s, rfi)}")
+            lineas.append(f"Tip: {tip_rfi(s, rfi)}")
+        lineas.append(f"Rango {s.posicion}: {entrada['rango']}")
     return "\n".join(lineas)

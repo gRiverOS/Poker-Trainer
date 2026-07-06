@@ -82,6 +82,14 @@ opcionales:
   valor) — decisión de Gustavo 2026-07-05: el desorden es parte de entrenar la
   lectura. La notación 169 del paréntesis sí canonicaliza (carta alta primero).
 - Palos como símbolos (K♦) en pantalla; letras (Kd) en parsing, CSV y notación.
+- **Mazo de 4 colores** (estándar online): ♠ neutro, ♥ rojo, ♦ azul, ♣ verde.
+- **Jerarquía de feedback**: veredicto ✓/✗ coloreado (verde/rojo, ámbar el
+  "spot al límite") > tip a peso normal > evidencia de charts atenuada (gris).
+  El tip va ANTES que la evidencia.
+- Ayuda de input siempre `[x/y/z]`, acciones de menor a mayor agresión
+  ([f/o], [f/c], [f/c/3]). Sangría: situación a 0, detalle y feedback a 2.
+- ANSI solo con stdout tty y sin `NO_COLOR` (pipes reciben texto limpio).
+  Todo esto vive en trainer.py — la lógica pura de src/ no emite color.
 
 ## Convenciones de trabajo
 

@@ -23,3 +23,9 @@ def test_cuadricula_menciona_combos_y_fuente_del_rango():
     salida = cuadricula("UTG", CHART)
     assert "1326" in salida
     assert CHART["UTG"]["rango"] in salida
+
+
+def test_cuadricula_sin_color_no_emite_ansi():
+    salida = cuadricula("BTN", CHART, color=False)
+    assert "\033[" not in salida
+    assert "AA" in salida and "72o" in salida

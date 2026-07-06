@@ -1,46 +1,65 @@
-"""CLI del entrenador: `uv run trainer.py --drill preflop [--n 10] [--semilla 42]`."""
+"""CLI del entrenador: `uv run trainer.py --drill preflop [--n 10] [--semilla 42]`.
+
+Capa de presentación. Sistema visual:
+- Jerarquía: veredicto (color) > tip (normal) > evidencia de charts (gris dim).
+- Mazo de 4 colores: ♠ neutro, ♥ rojo, ♦ azul, ♣ verde (estándar online).
+- Layout: situación sin sangría, detalle y feedback con sangría de 2,
+  ayuda de input siempre [x/y/z] de menor a mayor agresión.
+- ANSI solo si stdout es un terminal y NO_COLOR no está seteado.
+"""
 
 import argparse
+import os
 import random
+import sys
+from pathlib import Path
 
 from src import progreso
-from src.cartas import mostrar
 from src.drills import lectura, pot_odds, preflop
 from src.equity import equity_monte_carlo
 from src.rangos import POSICIONES_RFI, cargar_defensa_bb, cargar_rfi, combos
 
 DRILLS = ("preflop", "pot_odds", "lectura")
 
+USA_COLOR = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
 VERDE = "\033[1;32m"
 GRIS = "\033[90m"
 RESET = "\033[0m"
+PALO_COLOR = {"s": "", "h": "31", "d": "34", "c": "32"}
 
 
-def cuadricula(posicion: str, chart: dict) -> str:
-    """Cuadrícula 13×13 del rango RFI de una posición, con colores ANSI."""
-    manos = chart[posicion]["manos"]
-    orden = "AKQJT98765432"
-    filas = []
-    for i, fila in enumerate(orden):
-        celdas = []
-        for j, col in enumerate(orden):
-            if i == j:
-                nombre = fila * 2
-            elif j > i:
-                nombre = f"{fila}{col}s"
-            else:
-                nombre = f"{col}{fila}o"
-            color = VERDE if nombre in manos else GRIS
-            celdas.append(f"{color}{nombre:<3}{RESET}")
-        filas.append(" ".join(celdas))
-    n = combos(manos)
-    encabezado = [
-        f"Rango RFI de {posicion} (cash 6-max 100bb) — {n} de 1326 combos ({round(100 * n / 1326)}%)",
-        chart[posicion]["rango"],
-        f"{VERDE}verde{RESET} = open, {GRIS}gris{RESET} = fold · diagonal: parejas · arriba: suited · abajo: offsuit",
-        "",
-    ]
-    return "\n".join(encabezado + filas)
+def _c(codigo: str, texto: str) -> str:
+    return f"\033[{codigo}m{texto}{RESET}" if USA_COLOR and codigo else texto
+
+
+def _mano(cartas_) -> str:
+    """Cartas para pantalla con mazo de 4 colores: ♠ neutro, ♥ rojo, ♦ azul, ♣ verde."""
+    return " ".join(_c(PALO_COLOR[c.palo], c.bonita) for c in cartas_)
+
+
+def _pintar_linea(linea: str) -> str:
+    """Aplica la jerarquía visual a una línea de feedback de los drills."""
+    if linea.startswith(("Rango ", "3-bet ", "Call ", "Mano ")):
+        return _c("90", linea)  # evidencia: atenuada
+    if linea.startswith("✓"):
+        linea = _c("32", "✓ Correcto") + linea[len("✓ Correcto") :]
+    elif linea.startswith("✗"):
+        linea = _c("31", "✗ Incorrecto") + linea[len("✗ Incorrecto") :]
+    limite = "(spot al límite: cualquier decisión vale)"
+    if limite in linea:
+        linea = linea.replace(limite, _c("33", limite))
+    return linea
+
+
+def _imprimir_feedback(texto: str) -> None:
+    for linea in texto.splitlines():
+        print(f"  {_pintar_linea(linea.strip())}")
+    print()
+
+
+def _pct_color(pct: float) -> str:
+    codigo = "32" if pct >= 80 else "33" if pct >= 50 else "31"
+    return _c(codigo, f"{pct:g}%")
 
 
 def _leer(prompt: str) -> str | None:
@@ -53,16 +72,25 @@ def _leer(prompt: str) -> str | None:
     return None if texto == "q" else texto
 
 
+def _situaciones(n: int) -> str:
+    return "1 situación" if n == 1 else f"{n} situaciones"
+
+
 def _cerrar_sesion(resultados, drill: str, extra: str = "") -> None:
     if not resultados:
         print("Sesión vacía, nada que guardar.")
         return
     r = progreso.resumen(resultados)
-    print(f"— Resumen: {r['aciertos']}/{r['total']} aciertos ({r['pct']}%){extra}")
-    for cat, datos in r["por_categoria"].items():
-        print(f"  {cat}: {datos['aciertos']}/{datos['total']} ({datos['pct']}%)")
+    print(f"— Resumen: {r['aciertos']}/{r['total']} aciertos ({_pct_color(r['pct'])}){extra}")
+    ancho = max(len(cat) for cat in r["por_categoria"])
+    for cat, d in r["por_categoria"].items():
+        print(f"  {cat:<{ancho}}  {d['aciertos']}/{d['total']}  {_pct_color(d['pct'])}")
     progreso.registrar(resultados, drill=drill)
-    print(f"Historial actualizado: {progreso.RUTA_HISTORIAL}")
+    try:
+        ruta = progreso.RUTA_HISTORIAL.relative_to(Path.cwd())
+    except ValueError:
+        ruta = progreso.RUTA_HISTORIAL
+    print(f"Historial actualizado: {ruta}")
 
 
 def sesion_preflop(n: int, rng: random.Random) -> None:
@@ -71,20 +99,20 @@ def sesion_preflop(n: int, rng: random.Random) -> None:
     pesos = progreso.cargar_pesos("preflop")
     resultados = []
     print(
-        f"D1 — Preflop (cash 6-max 100bb). {n} situaciones, dos escenarios mezclados:\n"
-        "  · RFI (nadie abrió): 'o' (open) o 'f' (fold)\n"
-        "  · Defensa de BB (alguien abrió ~2.5bb): 'f' (fold), 'c' (call) o '3' (3-bet)\n"
+        f"D1 — Preflop (cash 6-max 100bb). {_situaciones(n)}, dos escenarios mezclados:\n"
+        "  · RFI (nadie abrió): [f/o] fold u open\n"
+        "  · Defensa de BB (alguien abrió ~2.5bb): [f/c/3] fold, call o 3-bet\n"
         "  'q' para salir.\n"
     )
 
     for i in range(1, n + 1):
         s = preflop.generar_situacion(rng, pesos)
         if s.es_defensa:
-            prompt = f"[{i}/{n}] BB vs open de {s.abridor} — {mostrar(s.mano)} ({s.notacion}) [f/c/3]: "
+            prompt = f"[{i}/{n}] BB vs open de {s.abridor} — {_mano(s.mano)} ({s.notacion}) [f/c/3]: "
             mapa = {"f": "fold", "c": "call", "3": "3bet", "r": "3bet"}
         else:
-            prompt = f"[{i}/{n}] {s.posicion} — {mostrar(s.mano)} ({s.notacion}) [o/f]: "
-            mapa = {"o": "open", "f": "fold"}
+            prompt = f"[{i}/{n}] {s.posicion} — {_mano(s.mano)} ({s.notacion}) [f/o]: "
+            mapa = {"f": "fold", "o": "open"}
         respuesta = _leer(prompt)
         if respuesta is None:
             break
@@ -93,7 +121,7 @@ def sesion_preflop(n: int, rng: random.Random) -> None:
             continue
         resultado = preflop.Resultado(s, mapa[respuesta], preflop.accion_correcta(s, rfi, defensa))
         resultados.append(resultado)
-        print(f"  {preflop.feedback(resultado, rfi, defensa)}\n")
+        _imprimir_feedback(preflop.feedback(resultado, rfi, defensa))
 
     _cerrar_sesion(resultados, drill="preflop")
 
@@ -102,16 +130,16 @@ def sesion_pot_odds(n: int, rng: random.Random) -> None:
     pesos = progreso.cargar_pesos("pot_odds")
     resultados = []
     print(
-        f"D2 — Pot odds y equity (heads-up vs mano aleatoria). {n} situaciones.\n"
-        "Estima tu equity (%, enter para saltar la estimación) y decide 'c' (call), 'f' (fold) o 'q' (salir).\n"
+        f"D2 — Pot odds y equity (heads-up vs mano aleatoria). {_situaciones(n)}.\n"
+        "  Estima tu equity (%, enter para saltar) y decide [f/c] fold o call. 'q' para salir.\n"
     )
 
     for i in range(1, n + 1):
         s = pot_odds.generar_situacion(rng, pesos)
-        print(f"[{i}/{n}] {s.calle}: tu mano {mostrar(s.mano)} — board {mostrar(s.board)}")
-        print(f"      pot {s.pot:g}bb, el rival apuesta {s.apuesta:g}bb. ¿Pagas?")
+        print(f"[{i}/{n}] {s.calle} — tu mano {_mano(s.mano)} · board {_mano(s.board)}")
+        print(f"  pot {s.pot:g}bb, el rival apuesta {s.apuesta:g}bb")
 
-        estimacion_texto = _leer("      tu equity estimada (%): ")
+        estimacion_texto = _leer("  tu equity estimada (%): ")
         if estimacion_texto is None:
             break
         estimacion = None
@@ -119,19 +147,19 @@ def sesion_pot_odds(n: int, rng: random.Random) -> None:
             try:
                 estimacion = float(estimacion_texto.replace("%", "").replace(",", "."))
             except ValueError:
-                print("      Estimación ilegible, la salto.")
+                print("  Estimación ilegible, la salto.")
 
-        decision = _leer("      call o fold (c/f): ")
+        decision = _leer("  ¿pagas? [f/c]: ")
         if decision is None:
             break
         if decision not in ("c", "f"):
-            print("      Respuesta inválida, situación saltada.\n")
+            print("  Respuesta inválida, situación saltada.\n")
             continue
 
         equity_real = 100 * equity_monte_carlo(s.mano, s.board, n=10_000, rng=rng)
         resultado = pot_odds.Resultado(s, "call" if decision == "c" else "fold", equity_real, estimacion)
         resultados.append(resultado)
-        print(f"  {pot_odds.feedback(resultado)}\n")
+        _imprimir_feedback(pot_odds.feedback(resultado))
 
     errores = [r.error_estimacion for r in resultados if r.error_estimacion is not None]
     extra = f" — error medio de estimación: {sum(errores) / len(errores):.1f} puntos" if errores else ""
@@ -142,28 +170,56 @@ def sesion_lectura(n: int, rng: random.Random) -> None:
     pesos = progreso.cargar_pesos("lectura")
     resultados = []
     print(
-        f"D3 — Lectura de manos. {n} situaciones.\n"
-        "¿Qué mano gana al showdown? Responde con el número, 'e' si empatan, o 'q' para salir.\n"
+        f"D3 — Lectura de manos. {_situaciones(n)}.\n"
+        "  ¿Qué mano gana al showdown? Responde el número, 'e' si empatan, 'q' para salir.\n"
     )
 
     for i in range(1, n + 1):
         s = lectura.generar_situacion(rng, pesos)
-        print(f"[{i}/{n}] Board: {mostrar(s.board)}")
+        print(f"[{i}/{n}] Board: {_mano(s.board)}")
         for j, mano in enumerate(s.manos, start=1):
-            print(f"      Mano {j}: {mostrar(mano)}")
+            print(f"  Mano {j}: {_mano(mano)}")
 
         validas = tuple(str(j) for j in range(1, len(s.manos) + 1)) + ("e",)
-        respuesta = _leer(f"      ¿quién gana? ({'/'.join(validas)}): ")
+        respuesta = _leer(f"  ¿quién gana? [{'/'.join(validas)}]: ")
         if respuesta is None:
             break
         if respuesta not in validas:
-            print("      Respuesta inválida, situación saltada.\n")
+            print("  Respuesta inválida, situación saltada.\n")
             continue
         resultado = lectura.Resultado(s, respuesta)
         resultados.append(resultado)
-        print(f"  {lectura.feedback(resultado)}\n")
+        _imprimir_feedback(lectura.feedback(resultado))
 
     _cerrar_sesion(resultados, drill="lectura")
+
+
+def cuadricula(posicion: str, chart: dict, color: bool = True) -> str:
+    """Cuadrícula 13×13 del rango RFI de una posición, con colores ANSI opcionales."""
+    verde, gris, reset = (VERDE, GRIS, RESET) if color else ("", "", "")
+    manos = chart[posicion]["manos"]
+    orden = "AKQJT98765432"
+    filas = []
+    for i, fila in enumerate(orden):
+        celdas = []
+        for j, col in enumerate(orden):
+            if i == j:
+                nombre = fila * 2
+            elif j > i:
+                nombre = f"{fila}{col}s"
+            else:
+                nombre = f"{col}{fila}o"
+            pintura = verde if nombre in manos else gris
+            celdas.append(f"{pintura}{nombre:<3}{reset}")
+        filas.append(" ".join(celdas))
+    n = combos(manos)
+    encabezado = [
+        f"Rango RFI de {posicion} (cash 6-max 100bb) — {n} de 1326 combos ({round(100 * n / 1326)}%)",
+        chart[posicion]["rango"],
+        f"{verde}verde{reset} = open, {gris}gris{reset} = fold · diagonal: parejas · arriba: suited · abajo: offsuit",
+        "",
+    ]
+    return "\n".join(encabezado + filas)
 
 
 def main() -> None:
@@ -176,7 +232,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.rango:
-        print(cuadricula(args.rango, cargar_rfi()))
+        print(cuadricula(args.rango, cargar_rfi(), color=USA_COLOR))
         return
     if not args.drill:
         parser.error("indica --drill para entrenar o --rango para ver un chart")
