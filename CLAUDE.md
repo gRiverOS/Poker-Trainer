@@ -65,6 +65,13 @@ Los tres drills del MVP (D1, D2, D3) están jugables. Pendientes opcionales:
 | F4 | D3 lectura de manos + repetición ponderada por error ✅ |
 | F5 | (Opcional) D4 postflop o UI web |
 
+## Decisiones de UI
+
+- Las cartas se muestran **en el orden en que se repartieron** (no ordenadas por
+  valor) — decisión de Gustavo 2026-07-05: el desorden es parte de entrenar la
+  lectura. La notación 169 del paréntesis sí canonicaliza (carta alta primero).
+- Palos como símbolos (K♦) en pantalla; letras (Kd) en parsing, CSV y notación.
+
 ## Convenciones de trabajo
 
 - Documentar + commitear por paso (misma cadencia del Shoe-Tracker).
