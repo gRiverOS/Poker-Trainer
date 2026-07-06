@@ -13,17 +13,19 @@ implementar cualquier cosa. Define módulos, arquitectura y fases.
 
 ## Estado actual
 
-**Fase F2 completada** (2026-07-05): drill D1 preflop jugable
-(`uv run trainer.py --drill preflop`), con charts RFI citados en `data/`,
-`rangos.py` (notación 169 + expansión de tokens), feedback por mano y resumen
-por posición, e historial persistido en `output/historial.csv`.
+**Fase F3 completada** (2026-07-05): drill D2 pot odds/equity jugable
+(`uv run trainer.py --drill pot_odds`). `equity.py` con enumeración exacta
+(espacios chicos) y Monte Carlo (~0,1 ms/muestra medido → 10k muestras ≈ 1 s;
+**la escalación a `treys` quedó descartada con datos**). Validado contra
+valores de referencia publicados (AA vs KK 81,9%, AKs vs QQ 46%, flush draw
+~36%) con tolerancia ±2-3 puntos. El drill tiene zona gris de ±2 puntos en
+spots al límite (el MC tiene ruido ~±1 punto).
 
 **Alcance de D1 en F2: solo RFI** (nadie abrió: ¿open o fold?). Enfrentar un
 open (call/3-bet) requiere charts por par de posiciones — extensión pendiente
-de D1, priorizable después de F3/F4.
+de D1, priorizable después de F4.
 
-Próximo paso: F3 — D2 pot odds/equity (`equity.py`, Monte Carlo + enumeración,
-validar contra calculadoras de referencia).
+Próximo paso: F4 — D3 lectura de manos + repetición ponderada por error.
 
 ## Decisiones tomadas
 
@@ -46,7 +48,8 @@ validar contra calculadoras de referencia).
 
 - **Cash 100bb, 6-max** — confirmado por Gustavo (era la propuesta del diseño).
 - **Evaluador propio** — implementado en F1 y validado contra `treys` (5.000
-  repartos, 0 discrepancias). Migrar a `treys` solo si el Monte Carlo de F3 lo pide.
+  repartos, 0 discrepancias). En F3 se midió: ~0,1 ms/muestra, Monte Carlo de
+  10k ≈ 1 s → `treys` descartado, Python puro alcanza.
 - **Fuente de los charts preflop:** Preflop Wizard
   (https://www.preflopwizard.app/blog/preflop-charts), citada en
   `data/rangos_preflop/rfi_cash_6max_100bb.json` con fecha de consulta.
@@ -58,7 +61,7 @@ validar contra calculadoras de referencia).
 | F0 | Diseño + esqueleto del repo ✅ |
 | F1 | `cartas.py` + `evaluador.py` + tests de regresión ✅ |
 | F2 | Drill D1 preflop (RFI) con charts en `data/` + persistencia de progreso ✅ |
-| F3 | D2 pot odds/equity (Monte Carlo, validar contra calculadoras de referencia) |
+| F3 | D2 pot odds/equity (Monte Carlo, validado contra referencias) ✅ |
 | F4 | D3 lectura de manos + repetición ponderada por error |
 | F5 | (Opcional) D4 postflop o UI web |
 

@@ -36,6 +36,28 @@ class Resultado:
     def acierto(self) -> bool:
         return self.respuesta == self.correcta
 
+    # --- interfaz común de progreso ---
+
+    @property
+    def categoria(self) -> str:
+        return self.situacion.posicion
+
+    @property
+    def contexto(self) -> str:
+        return self.situacion.posicion
+
+    @property
+    def mano_texto(self) -> str:
+        return self.situacion.notacion
+
+    @property
+    def respuesta_texto(self) -> str:
+        return self.respuesta
+
+    @property
+    def correcta_texto(self) -> str:
+        return self.correcta
+
 
 def generar_situacion(rng: random.Random) -> Situacion:
     posicion = rng.choice(POSICIONES_RFI)

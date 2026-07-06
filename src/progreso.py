@@ -1,6 +1,8 @@
 """Persistencia de resultados por sesión (append a historial CSV en output/).
 
-Formato una-fila-por-respuesta para poder graficar tendencia después.
+Formato una-fila-por-respuesta para poder graficar tendencia después. Cada
+drill aporta resultados con la misma interfaz: categoria (para agrupar el
+resumen), contexto, mano_texto, respuesta_texto, correcta_texto y acierto.
 """
 
 import csv
@@ -9,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 RUTA_HISTORIAL = Path(__file__).parent.parent / "output" / "historial.csv"
-COLUMNAS = ["timestamp", "drill", "posicion", "mano", "respuesta", "correcta", "acierto"]
+COLUMNAS = ["timestamp", "drill", "contexto", "mano", "respuesta", "correcta", "acierto"]
 
 
 def registrar(resultados, drill: str, ruta: Path = RUTA_HISTORIAL, ahora: datetime | None = None) -> None:
@@ -22,25 +24,24 @@ def registrar(resultados, drill: str, ruta: Path = RUTA_HISTORIAL, ahora: dateti
         if nuevo:
             escritor.writerow(COLUMNAS)
         for r in resultados:
-            s = r.situacion
             escritor.writerow(
-                [marca, drill, s.posicion, s.notacion, r.respuesta, r.correcta, int(r.acierto)]
+                [marca, drill, r.contexto, r.mano_texto, r.respuesta_texto, r.correcta_texto, int(r.acierto)]
             )
 
 
 def resumen(resultados) -> dict:
-    """Resumen de una sesión: % de acierto total y por posición."""
+    """Resumen de una sesión: % de acierto total y por categoría del drill."""
     total = len(resultados)
     aciertos = sum(r.acierto for r in resultados)
-    por_posicion: dict[str, list[int]] = defaultdict(list)
+    por_categoria: dict[str, list[int]] = defaultdict(list)
     for r in resultados:
-        por_posicion[r.situacion.posicion].append(int(r.acierto))
+        por_categoria[r.categoria].append(int(r.acierto))
     return {
         "total": total,
         "aciertos": aciertos,
         "pct": round(100 * aciertos / total, 1) if total else 0.0,
-        "por_posicion": {
-            pos: {"total": len(v), "aciertos": sum(v), "pct": round(100 * sum(v) / len(v), 1)}
-            for pos, v in sorted(por_posicion.items())
+        "por_categoria": {
+            cat: {"total": len(v), "aciertos": sum(v), "pct": round(100 * sum(v) / len(v), 1)}
+            for cat, v in sorted(por_categoria.items())
         },
     }
