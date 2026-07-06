@@ -21,11 +21,22 @@ mano. **Repetición ponderada activa en los 3 drills**: peso por categoría
 la mano ganadora en D3 vía muestreo por rechazo); el historial ahora guarda
 la columna `categoria`.
 
-Los tres drills del MVP (D1, D2, D3) están jugables. Pendientes opcionales:
-- Extensión de D1: enfrentar un open (call/3-bet) — requiere charts por par
-  de posiciones.
+**Extensión de D1 completada** (2026-07-05): defensa de BB contra un open
+(fold/call/3-bet), mezclada con RFI en el mismo drill (10 categorías
+ponderables: 5 posiciones RFI + 5 "BB vs X"). Alcance: solo BB defiende;
+defender desde otras posiciones (p. ej. CO vs UTG) queda fuera.
+
+⚠️ **Los charts de defensa de BB son APROXIMACIÓN DE CONSENSO, no citables**:
+ninguna fuente pública publica esa defensa por posición en texto (viven en
+visores interactivos o PDFs tras registro). Está marcado en el propio JSON
+(`bb_defensa_cash_6max_100bb.json`) con el detalle de los principios usados.
+Para afinar: exportar de GTO Wizard (cuenta gratis) y editar solo el JSON.
+
+Los tres drills del MVP (D1 con extensión, D2, D3) están jugables. Pendientes
+opcionales:
 - F5 (opcional): D4 postflop guiado (requiere contenido curado) o UI web.
 - Gráfico de tendencia desde `output/historial.csv`.
+- Reemplazar la defensa BB por un export citable.
 
 ## Decisiones tomadas
 

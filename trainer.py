@@ -7,7 +7,7 @@ from src import progreso
 from src.cartas import mostrar
 from src.drills import lectura, pot_odds, preflop
 from src.equity import equity_monte_carlo
-from src.rangos import POSICIONES_RFI, cargar_rfi, combos
+from src.rangos import POSICIONES_RFI, cargar_defensa_bb, cargar_rfi, combos
 
 DRILLS = ("preflop", "pot_odds", "lectura")
 
@@ -66,23 +66,34 @@ def _cerrar_sesion(resultados, drill: str, extra: str = "") -> None:
 
 
 def sesion_preflop(n: int, rng: random.Random) -> None:
-    chart = cargar_rfi()
+    rfi = cargar_rfi()
+    defensa = cargar_defensa_bb()
     pesos = progreso.cargar_pesos("preflop")
     resultados = []
-    print(f"D1 — Preflop RFI (cash 6-max 100bb). {n} situaciones; responde 'o' (open), 'f' (fold) o 'q' (salir).\n")
+    print(
+        f"D1 — Preflop (cash 6-max 100bb). {n} situaciones, dos escenarios mezclados:\n"
+        "  · RFI (nadie abrió): 'o' (open) o 'f' (fold)\n"
+        "  · Defensa de BB (alguien abrió ~2.5bb): 'f' (fold), 'c' (call) o '3' (3-bet)\n"
+        "  'q' para salir.\n"
+    )
 
     for i in range(1, n + 1):
-        situacion = preflop.generar_situacion(rng, pesos)
-        respuesta = _leer(f"[{i}/{n}] {situacion.posicion} — {mostrar(situacion.mano)} ({situacion.notacion}): ")
+        s = preflop.generar_situacion(rng, pesos)
+        if s.es_defensa:
+            prompt = f"[{i}/{n}] BB vs open de {s.abridor} — {mostrar(s.mano)} ({s.notacion}) [f/c/3]: "
+            mapa = {"f": "fold", "c": "call", "3": "3bet", "r": "3bet"}
+        else:
+            prompt = f"[{i}/{n}] {s.posicion} — {mostrar(s.mano)} ({s.notacion}) [o/f]: "
+            mapa = {"o": "open", "f": "fold"}
+        respuesta = _leer(prompt)
         if respuesta is None:
             break
-        if respuesta not in ("o", "f"):
-            print("  Respuesta inválida, situación saltada (usa 'o', 'f' o 'q').\n")
+        if respuesta not in mapa:
+            print(f"  Respuesta inválida, situación saltada (usa {'/'.join(sorted(set(mapa)))} o 'q').\n")
             continue
-        elegida = "open" if respuesta == "o" else "fold"
-        resultado = preflop.Resultado(situacion, elegida, preflop.accion_correcta(situacion, chart))
+        resultado = preflop.Resultado(s, mapa[respuesta], preflop.accion_correcta(s, rfi, defensa))
         resultados.append(resultado)
-        print(f"  {preflop.feedback(resultado, chart)}\n")
+        print(f"  {preflop.feedback(resultado, rfi, defensa)}\n")
 
     _cerrar_sesion(resultados, drill="preflop")
 

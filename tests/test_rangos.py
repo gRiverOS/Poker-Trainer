@@ -3,7 +3,7 @@
 import pytest
 
 from src.cartas import carta
-from src.rangos import POSICIONES_RFI, cargar_rfi, combos, expandir, notacion
+from src.rangos import POSICIONES_RFI, cargar_defensa_bb, cargar_rfi, combos, expandir, notacion
 
 
 # --- Notación de dos cartas ---
@@ -54,7 +54,22 @@ def test_expandir_rango_compuesto():
     assert manos == expandir("22+") | expandir("ATs+") | {"KQo"}
 
 
-@pytest.mark.parametrize("token", ["", "A", "AK", "KAs", "A1s+", "Axo", "22s", "TT-"])
+def test_expandir_guion_parejas():
+    assert expandir("22-99") == expandir("22+") - expandir("TT+")
+
+
+def test_expandir_guion_kickers():
+    assert expandir("A6s-A9s") == {"A6s", "A7s", "A8s", "A9s"}
+    assert expandir("K9o-KJo") == {"K9o", "KTo", "KJo"}
+
+
+def test_expandir_guion_acepta_ambos_ordenes():
+    # la convención de los charts escribe descendente: A5s-A2s
+    assert expandir("A5s-A2s") == expandir("A2s-A5s") == {"A2s", "A3s", "A4s", "A5s"}
+    assert expandir("99-22") == expandir("22-99")
+
+
+@pytest.mark.parametrize("token", ["", "A", "AK", "KAs", "A1s+", "Axo", "22s", "TT-", "A2s-K9s", "AKs-AAs"])
 def test_tokens_invalidos(token):
     with pytest.raises(ValueError):
         expandir(token)
@@ -89,3 +104,30 @@ def test_chart_rfi_casos_conocidos():
     assert "72o" not in chart["BTN"]["manos"]  # la peor mano no se abre ni en BTN
     assert "A2o" in chart["BTN"]["manos"]  # BTN abre cualquier as
     assert "A2o" not in chart["CO"]["manos"]
+
+
+# --- Chart de defensa de BB ---
+
+
+def test_defensa_bb_carga_los_5_abridores():
+    chart = cargar_defensa_bb()
+    assert set(chart) == set(POSICIONES_RFI)
+    for abridor in POSICIONES_RFI:
+        assert chart[abridor]["3bet"]["manos"] and chart[abridor]["call"]["manos"]
+
+
+def test_defensa_bb_3bet_y_call_no_se_pisan():
+    chart = cargar_defensa_bb()
+    for abridor in POSICIONES_RFI:
+        assert not chart[abridor]["3bet"]["manos"] & chart[abridor]["call"]["manos"]
+
+
+def test_defensa_bb_se_ensancha_contra_opens_tardios():
+    chart = cargar_defensa_bb()
+
+    def defensa_total(abridor):
+        return combos(chart[abridor]["3bet"]["manos"] | chart[abridor]["call"]["manos"])
+
+    tamanos = [defensa_total(p) for p in ("UTG", "MP", "CO", "BTN")]
+    assert tamanos == sorted(tamanos) and len(set(tamanos)) == 4
+    assert defensa_total("SB") > defensa_total("CO")  # BvB se defiende ancho

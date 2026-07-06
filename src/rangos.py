@@ -13,6 +13,7 @@ from src.cartas import LETRA_DE, Carta
 
 ORDEN_LETRAS = "23456789TJQKA"
 RUTA_RFI = Path(__file__).parent.parent / "data" / "rangos_preflop" / "rfi_cash_6max_100bb.json"
+RUTA_DEFENSA_BB = Path(__file__).parent.parent / "data" / "rangos_preflop" / "bb_defensa_cash_6max_100bb.json"
 POSICIONES_RFI = ("UTG", "MP", "CO", "BTN", "SB")  # BB no decide en pot no abierto
 
 
@@ -26,6 +27,8 @@ def notacion(c1: Carta, c2: Carta) -> str:
 
 
 def _expandir_token(token: str) -> set[str]:
+    if "-" in token:
+        return _expandir_guion(token)
     plus = token.endswith("+")
     cuerpo = token.rstrip("+")
 
@@ -46,6 +49,26 @@ def _expandir_token(token: str) -> set[str]:
         hasta = i_alta if plus else i_baja + 1
         return {f"{alta}{ORDEN_LETRAS[i]}{sufijo}" for i in range(i_baja, hasta)}
 
+    raise ValueError(f"Token de rango inválido: {token!r}")
+
+
+def _expandir_guion(token: str) -> set[str]:
+    """Rango con guión, en cualquier orden: "22-99", "A6s-ATs" o "A5s-A2s"."""
+    desde, hasta = token.split("-", 1)
+    if len(desde) == 2 == len(hasta) and desde[0] == desde[1] and hasta[0] == hasta[1]:
+        i, j = sorted((ORDEN_LETRAS.index(desde[0]), ORDEN_LETRAS.index(hasta[0])))
+        return {ORDEN_LETRAS[k] * 2 for k in range(i, j + 1)}
+    if (
+        len(desde) == 3 == len(hasta)
+        and desde[0] == hasta[0]
+        and desde[2] == hasta[2]
+        and desde[2] in "so"
+    ):
+        alta, sufijo = desde[0], desde[2]
+        i, j = sorted((ORDEN_LETRAS.index(desde[1]), ORDEN_LETRAS.index(hasta[1])))
+        if j >= ORDEN_LETRAS.index(alta):
+            raise ValueError(f"Token de rango inválido: {token!r} (kicker mayor que la carta alta)")
+        return {f"{alta}{ORDEN_LETRAS[k]}{sufijo}" for k in range(i, j + 1)}
     raise ValueError(f"Token de rango inválido: {token!r}")
 
 
@@ -82,4 +105,28 @@ def cargar_rfi(ruta: Path = RUTA_RFI) -> dict:
     faltantes = set(POSICIONES_RFI) - set(chart)
     if faltantes:
         raise ValueError(f"Chart RFI incompleto, faltan posiciones: {sorted(faltantes)}")
+    return chart
+
+
+def cargar_defensa_bb(ruta: Path = RUTA_DEFENSA_BB) -> dict:
+    """Chart de defensa de BB vs open: {abridor: {"3bet": {...}, "call": {...}}}.
+
+    Valida que 3bet y call no se pisen (una mano no puede tener dos acciones
+    correctas) — un solape sería un error silencioso en los datos.
+    """
+    datos = json.loads(ruta.read_text())
+    chart = {}
+    for abridor, rangos in datos["vs_open"].items():
+        tres, pagar = expandir(rangos["3bet"]), expandir(rangos["call"])
+        solape = tres & pagar
+        if solape:
+            raise ValueError(f"Defensa BB vs {abridor}: manos en 3bet y call a la vez: {sorted(solape)}")
+        chart[abridor] = {
+            "3bet": {"rango": rangos["3bet"], "manos": tres},
+            "call": {"rango": rangos["call"], "manos": pagar},
+            "fuente": datos["fuente"],
+        }
+    faltantes = set(POSICIONES_RFI) - set(chart)
+    if faltantes:
+        raise ValueError(f"Defensa BB incompleta, faltan abridores: {sorted(faltantes)}")
     return chart
