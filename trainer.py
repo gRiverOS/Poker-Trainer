@@ -2,7 +2,7 @@
 
 Capa de presentación. Sistema visual:
 - Jerarquía: veredicto (color) > tip (normal) > evidencia de charts (gris dim).
-- Mazo de 4 colores: ♠ neutro, ♥ rojo, ♦ azul, ♣ verde (estándar online).
+- Mazo clásico de 2 colores: ♥♦ rojos, ♠♣ neutros.
 - Layout: situación sin sangría, detalle y feedback con sangría de 2,
   ayuda de input siempre [x/y/z] de menor a mayor agresión.
 - ANSI solo si stdout es un terminal y NO_COLOR no está seteado.
@@ -25,7 +25,7 @@ USA_COLOR = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
 VERDE = "\033[1;32m"
 GRIS = "\033[90m"
 RESET = "\033[0m"
-PALO_COLOR = {"s": "", "h": "31", "d": "34", "c": "32"}
+PALO_COLOR = {"s": "", "h": "31", "d": "31", "c": ""}  # mazo clásico: ♥♦ rojos, ♠♣ neutros
 
 
 def _c(codigo: str, texto: str) -> str:
@@ -33,7 +33,7 @@ def _c(codigo: str, texto: str) -> str:
 
 
 def _mano(cartas_) -> str:
-    """Cartas para pantalla con mazo de 4 colores: ♠ neutro, ♥ rojo, ♦ azul, ♣ verde."""
+    """Cartas para pantalla, mazo clásico: ♥♦ en rojo, ♠♣ sin color."""
     return " ".join(_c(PALO_COLOR[c.palo], c.bonita) for c in cartas_)
 
 

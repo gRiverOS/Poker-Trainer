@@ -82,7 +82,8 @@ opcionales:
   valor) — decisión de Gustavo 2026-07-05: el desorden es parte de entrenar la
   lectura. La notación 169 del paréntesis sí canonicaliza (carta alta primero).
 - Palos como símbolos (K♦) en pantalla; letras (Kd) en parsing, CSV y notación.
-- **Mazo de 4 colores** (estándar online): ♠ neutro, ♥ rojo, ♦ azul, ♣ verde.
+- **Mazo clásico de 2 colores** — decisión de Gustavo 2026-07-06: ♥♦ rojos,
+  ♠♣ neutros. (Se probó el de 4 colores estilo online y lo encontró muy colorido.)
 - **Jerarquía de feedback**: veredicto ✓/✗ coloreado (verde/rojo, ámbar el
   "spot al límite") > tip a peso normal > evidencia de charts atenuada (gris).
   El tip va ANTES que la evidencia.
