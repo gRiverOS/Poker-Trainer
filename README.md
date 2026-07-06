@@ -11,6 +11,7 @@ repetición ponderada por error — ver
 uv run trainer.py --drill preflop        # D1: ¿open o fold? (10 manos)
 uv run trainer.py --drill pot_odds       # D2: estima equity y decide call/fold
 uv run trainer.py --drill lectura        # D3: ¿qué mano gana al showdown?
+uv run trainer.py --rango BTN            # cuadrícula 13×13 del rango de una posición
 uv run pytest                            # tests
 ```
 

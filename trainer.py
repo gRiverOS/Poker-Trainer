@@ -7,9 +7,40 @@ from src import progreso
 from src.cartas import mostrar
 from src.drills import lectura, pot_odds, preflop
 from src.equity import equity_monte_carlo
-from src.rangos import cargar_rfi
+from src.rangos import POSICIONES_RFI, cargar_rfi, combos
 
 DRILLS = ("preflop", "pot_odds", "lectura")
+
+VERDE = "\033[1;32m"
+GRIS = "\033[90m"
+RESET = "\033[0m"
+
+
+def cuadricula(posicion: str, chart: dict) -> str:
+    """Cuadrícula 13×13 del rango RFI de una posición, con colores ANSI."""
+    manos = chart[posicion]["manos"]
+    orden = "AKQJT98765432"
+    filas = []
+    for i, fila in enumerate(orden):
+        celdas = []
+        for j, col in enumerate(orden):
+            if i == j:
+                nombre = fila * 2
+            elif j > i:
+                nombre = f"{fila}{col}s"
+            else:
+                nombre = f"{col}{fila}o"
+            color = VERDE if nombre in manos else GRIS
+            celdas.append(f"{color}{nombre:<3}{RESET}")
+        filas.append(" ".join(celdas))
+    n = combos(manos)
+    encabezado = [
+        f"Rango RFI de {posicion} (cash 6-max 100bb) — {n} de 1326 combos ({round(100 * n / 1326)}%)",
+        chart[posicion]["rango"],
+        f"{VERDE}verde{RESET} = open, {GRIS}gris{RESET} = fold · diagonal: parejas · arriba: suited · abajo: offsuit",
+        "",
+    ]
+    return "\n".join(encabezado + filas)
 
 
 def _leer(prompt: str) -> str | None:
@@ -126,10 +157,18 @@ def sesion_lectura(n: int, rng: random.Random) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Entrenador de Texas Hold'em")
-    parser.add_argument("--drill", choices=DRILLS, required=True)
+    parser.add_argument("--drill", choices=DRILLS)
+    parser.add_argument("--rango", type=str.upper, choices=POSICIONES_RFI, metavar="POSICION",
+                        help="muestra la cuadrícula del rango RFI de una posición (UTG, MP, CO, BTN, SB)")
     parser.add_argument("--n", type=int, default=10, help="situaciones por sesión")
     parser.add_argument("--semilla", type=int, default=None, help="semilla para reproducir una sesión")
     args = parser.parse_args()
+
+    if args.rango:
+        print(cuadricula(args.rango, cargar_rfi()))
+        return
+    if not args.drill:
+        parser.error("indica --drill para entrenar o --rango para ver un chart")
 
     rng = random.Random(args.semilla)
     sesiones = {"preflop": sesion_preflop, "pot_odds": sesion_pot_odds, "lectura": sesion_lectura}
