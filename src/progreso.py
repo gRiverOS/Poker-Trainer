@@ -1,8 +1,13 @@
-"""Persistencia de resultados por sesión (append a historial CSV en output/).
+"""Persistencia de resultados por sesión y pesos para repetición ponderada.
 
 Formato una-fila-por-respuesta para poder graficar tendencia después. Cada
-drill aporta resultados con la misma interfaz: categoria (para agrupar el
-resumen), contexto, mano_texto, respuesta_texto, correcta_texto y acierto.
+drill aporta resultados con la misma interfaz: categoria (para agrupar y
+ponderar), contexto, mano_texto, respuesta_texto, correcta_texto y acierto.
+
+Repetición ponderada (spaced repetition simplificada, ver diseño §4): cada
+categoría recibe peso = 1 + 2·tasa_de_error histórica, así las categorías
+donde más fallas aparecen más seguido. Sin datos, una categoría parte con
+peso 2.0 (equivale a asumir 50% de error: exploración neutra).
 """
 
 import csv
@@ -11,7 +16,8 @@ from datetime import datetime
 from pathlib import Path
 
 RUTA_HISTORIAL = Path(__file__).parent.parent / "output" / "historial.csv"
-COLUMNAS = ["timestamp", "drill", "contexto", "mano", "respuesta", "correcta", "acierto"]
+COLUMNAS = ["timestamp", "drill", "categoria", "contexto", "mano", "respuesta", "correcta", "acierto"]
+PESO_SIN_DATOS = 2.0
 
 
 def registrar(resultados, drill: str, ruta: Path = RUTA_HISTORIAL, ahora: datetime | None = None) -> None:
@@ -25,7 +31,16 @@ def registrar(resultados, drill: str, ruta: Path = RUTA_HISTORIAL, ahora: dateti
             escritor.writerow(COLUMNAS)
         for r in resultados:
             escritor.writerow(
-                [marca, drill, r.contexto, r.mano_texto, r.respuesta_texto, r.correcta_texto, int(r.acierto)]
+                [
+                    marca,
+                    drill,
+                    r.categoria,
+                    r.contexto,
+                    r.mano_texto,
+                    r.respuesta_texto,
+                    r.correcta_texto,
+                    int(r.acierto),
+                ]
             )
 
 
@@ -44,4 +59,22 @@ def resumen(resultados) -> dict:
             cat: {"total": len(v), "aciertos": sum(v), "pct": round(100 * sum(v) / len(v), 1)}
             for cat, v in sorted(por_categoria.items())
         },
+    }
+
+
+def cargar_pesos(drill: str, ruta: Path = RUTA_HISTORIAL) -> dict[str, float]:
+    """Peso por categoría según el historial del drill: 1 + 2·tasa_de_error.
+
+    Categorías sin historial no aparecen; el consumidor usa PESO_SIN_DATOS.
+    """
+    if not ruta.exists():
+        return {}
+    aciertos: dict[str, list[int]] = defaultdict(list)
+    with ruta.open(newline="") as f:
+        for fila in csv.DictReader(f):
+            if fila["drill"] == drill:
+                aciertos[fila["categoria"]].append(int(fila["acierto"]))
+    return {
+        cat: 1 + 2 * (1 - sum(v) / len(v))
+        for cat, v in aciertos.items()
     }

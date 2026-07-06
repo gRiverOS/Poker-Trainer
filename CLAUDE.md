@@ -13,19 +13,19 @@ implementar cualquier cosa. Define módulos, arquitectura y fases.
 
 ## Estado actual
 
-**Fase F3 completada** (2026-07-05): drill D2 pot odds/equity jugable
-(`uv run trainer.py --drill pot_odds`). `equity.py` con enumeración exacta
-(espacios chicos) y Monte Carlo (~0,1 ms/muestra medido → 10k muestras ≈ 1 s;
-**la escalación a `treys` quedó descartada con datos**). Validado contra
-valores de referencia publicados (AA vs KK 81,9%, AKs vs QQ 46%, flush draw
-~36%) con tolerancia ±2-3 puntos. El drill tiene zona gris de ±2 puntos en
-spots al límite (el MC tiene ruido ~±1 punto).
+**Fase F4 completada** (2026-07-05): drill D3 lectura de manos jugable
+(`uv run trainer.py --drill lectura`): board completo + 2-4 manos, ¿cuál
+gana? (con empates), feedback mostrando la categoría y el mejor 5 de cada
+mano. **Repetición ponderada activa en los 3 drills**: peso por categoría
+= 1 + 2·tasa_de_error histórica (posición en D1, calle en D2, categoría de
+la mano ganadora en D3 vía muestreo por rechazo); el historial ahora guarda
+la columna `categoria`.
 
-**Alcance de D1 en F2: solo RFI** (nadie abrió: ¿open o fold?). Enfrentar un
-open (call/3-bet) requiere charts por par de posiciones — extensión pendiente
-de D1, priorizable después de F4.
-
-Próximo paso: F4 — D3 lectura de manos + repetición ponderada por error.
+Los tres drills del MVP (D1, D2, D3) están jugables. Pendientes opcionales:
+- Extensión de D1: enfrentar un open (call/3-bet) — requiere charts por par
+  de posiciones.
+- F5 (opcional): D4 postflop guiado (requiere contenido curado) o UI web.
+- Gráfico de tendencia desde `output/historial.csv`.
 
 ## Decisiones tomadas
 
@@ -62,7 +62,7 @@ Próximo paso: F4 — D3 lectura de manos + repetición ponderada por error.
 | F1 | `cartas.py` + `evaluador.py` + tests de regresión ✅ |
 | F2 | Drill D1 preflop (RFI) con charts en `data/` + persistencia de progreso ✅ |
 | F3 | D2 pot odds/equity (Monte Carlo, validado contra referencias) ✅ |
-| F4 | D3 lectura de manos + repetición ponderada por error |
+| F4 | D3 lectura de manos + repetición ponderada por error ✅ |
 | F5 | (Opcional) D4 postflop o UI web |
 
 ## Convenciones de trabajo

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 from src.cartas import Carta, mazo
 from src.equity import equity_necesaria
+from src.progreso import PESO_SIN_DATOS
 
 POTS_BB = (4, 6, 8, 10, 15, 20)
 FRACCIONES = (1 / 3, 1 / 2, 2 / 3, 1)
@@ -90,8 +91,13 @@ class Resultado:
         return self.correcta or "limite"
 
 
-def generar_situacion(rng: random.Random) -> Situacion:
-    cuantas_board = rng.choice((3, 4))
+def generar_situacion(rng: random.Random, pesos: dict[str, float] | None = None) -> Situacion:
+    """Genera una situación; con pesos, la calle donde más fallas sale más."""
+    if pesos:
+        ponderaciones = [pesos.get(c, PESO_SIN_DATOS) for c in ("flop", "turn")]
+        cuantas_board = rng.choices((3, 4), weights=ponderaciones)[0]
+    else:
+        cuantas_board = rng.choice((3, 4))
     cartas = rng.sample(mazo(), 2 + cuantas_board)
     pot = float(rng.choice(POTS_BB))
     apuesta = round(pot * rng.choice(FRACCIONES), 1)

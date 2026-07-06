@@ -11,6 +11,7 @@ import random
 from dataclasses import dataclass
 
 from src.cartas import Carta, mazo
+from src.progreso import PESO_SIN_DATOS
 from src.rangos import POSICIONES_RFI, notacion
 
 ACCIONES = ("open", "fold")
@@ -59,8 +60,13 @@ class Resultado:
         return self.correcta
 
 
-def generar_situacion(rng: random.Random) -> Situacion:
-    posicion = rng.choice(POSICIONES_RFI)
+def generar_situacion(rng: random.Random, pesos: dict[str, float] | None = None) -> Situacion:
+    """Genera una situación; con pesos, las posiciones donde más fallas salen más."""
+    if pesos:
+        ponderaciones = [pesos.get(p, PESO_SIN_DATOS) for p in POSICIONES_RFI]
+        posicion = rng.choices(POSICIONES_RFI, weights=ponderaciones)[0]
+    else:
+        posicion = rng.choice(POSICIONES_RFI)
     c1, c2 = rng.sample(mazo(), 2)
     return Situacion(posicion, (c1, c2))
 

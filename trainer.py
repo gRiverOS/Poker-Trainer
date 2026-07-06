@@ -4,7 +4,7 @@ import argparse
 import random
 
 from src import progreso
-from src.drills import pot_odds, preflop
+from src.drills import lectura, pot_odds, preflop
 from src.equity import equity_monte_carlo
 from src.rangos import cargar_rfi
 
@@ -35,11 +35,12 @@ def _cerrar_sesion(resultados, drill: str, extra: str = "") -> None:
 
 def sesion_preflop(n: int, rng: random.Random) -> None:
     chart = cargar_rfi()
+    pesos = progreso.cargar_pesos("preflop")
     resultados = []
     print(f"D1 — Preflop RFI (cash 6-max 100bb). {n} situaciones; responde 'o' (open), 'f' (fold) o 'q' (salir).\n")
 
     for i in range(1, n + 1):
-        situacion = preflop.generar_situacion(rng)
+        situacion = preflop.generar_situacion(rng, pesos)
         cartas_texto = " ".join(str(c) for c in situacion.mano)
         respuesta = _leer(f"[{i}/{n}] {situacion.posicion} — {cartas_texto} ({situacion.notacion}): ")
         if respuesta is None:
@@ -56,6 +57,7 @@ def sesion_preflop(n: int, rng: random.Random) -> None:
 
 
 def sesion_pot_odds(n: int, rng: random.Random) -> None:
+    pesos = progreso.cargar_pesos("pot_odds")
     resultados = []
     print(
         f"D2 — Pot odds y equity (heads-up vs mano aleatoria). {n} situaciones.\n"
@@ -63,7 +65,7 @@ def sesion_pot_odds(n: int, rng: random.Random) -> None:
     )
 
     for i in range(1, n + 1):
-        s = pot_odds.generar_situacion(rng)
+        s = pot_odds.generar_situacion(rng, pesos)
         mano = " ".join(str(c) for c in s.mano)
         board = " ".join(str(c) for c in s.board)
         print(f"[{i}/{n}] {s.calle}: tu mano {mano} — board {board}")
@@ -96,6 +98,35 @@ def sesion_pot_odds(n: int, rng: random.Random) -> None:
     _cerrar_sesion(resultados, drill="pot_odds", extra=extra)
 
 
+def sesion_lectura(n: int, rng: random.Random) -> None:
+    pesos = progreso.cargar_pesos("lectura")
+    resultados = []
+    print(
+        f"D3 — Lectura de manos. {n} situaciones.\n"
+        "¿Qué mano gana al showdown? Responde con el número, 'e' si empatan, o 'q' para salir.\n"
+    )
+
+    for i in range(1, n + 1):
+        s = lectura.generar_situacion(rng, pesos)
+        board = " ".join(str(c) for c in s.board)
+        print(f"[{i}/{n}] Board: {board}")
+        for j, mano in enumerate(s.manos, start=1):
+            print(f"      Mano {j}: {' '.join(str(c) for c in mano)}")
+
+        validas = tuple(str(j) for j in range(1, len(s.manos) + 1)) + ("e",)
+        respuesta = _leer(f"      ¿quién gana? ({'/'.join(validas)}): ")
+        if respuesta is None:
+            break
+        if respuesta not in validas:
+            print("      Respuesta inválida, situación saltada.\n")
+            continue
+        resultado = lectura.Resultado(s, respuesta)
+        resultados.append(resultado)
+        print(f"  {lectura.feedback(resultado)}\n")
+
+    _cerrar_sesion(resultados, drill="lectura")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Entrenador de Texas Hold'em")
     parser.add_argument("--drill", choices=DRILLS, required=True)
@@ -104,12 +135,8 @@ def main() -> None:
     args = parser.parse_args()
 
     rng = random.Random(args.semilla)
-    if args.drill == "preflop":
-        sesion_preflop(args.n, rng)
-    elif args.drill == "pot_odds":
-        sesion_pot_odds(args.n, rng)
-    else:
-        print(f"Drill '{args.drill}' aún no implementado (llega en F4).")
+    sesiones = {"preflop": sesion_preflop, "pot_odds": sesion_pot_odds, "lectura": sesion_lectura}
+    sesiones[args.drill](args.n, rng)
 
 
 if __name__ == "__main__":
